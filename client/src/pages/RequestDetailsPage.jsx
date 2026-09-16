@@ -8,6 +8,7 @@ export const RequestDetailsPage = () => {
   const { id } = useParams();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
+  const [contact, setContact] = useState(null);
 
   const load = () => api.get(`/requests/${id}`).then((res) => setData(res.data));
   useEffect(() => { load(); }, [id]);
@@ -26,6 +27,16 @@ export const RequestDetailsPage = () => {
     await load();
   };
 
+  const contactDonor = async (matchId) => {
+    setError('');
+    try {
+      const res = await api.get(`/matches/${matchId}/contact`);
+      setContact(res.data.contact);
+    } catch (err) {
+      setError(apiErrorMessage(err));
+    }
+  };
+
   if (!data) return <div className="panel">Loading request...</div>;
   const { request, progress, matches } = data;
 
@@ -38,6 +49,15 @@ export const RequestDetailsPage = () => {
         </div>
         <MedicalDisclaimer />
         {error && <div className="form-error">{error}</div>}
+        {contact && (
+          <div className="contact-panel">
+            <strong>{contact.donor_label}: {contact.name}</strong>
+            <span>Phone: {contact.phone}</span>
+            <span>Email: {contact.email}</span>
+            <span>Current address: {contact.current_address}</span>
+            <p>{contact.note}</p>
+          </div>
+        )}
         <div className="metric-grid">
           <div className="metric"><span>Candidates</span><strong>{progress.candidates_identified}</strong></div>
           <div className="metric"><span>Notified</span><strong>{progress.notified}</strong></div>
@@ -59,6 +79,7 @@ export const RequestDetailsPage = () => {
               <strong>{match.donor_label} - {match.blood_group}</strong>
               <span>{Number(match.distance_km).toFixed(1)} km approx. Candidate Priority Score: {match.priority_score}</span>
               <StatusBadge>{match.donor_response}</StatusBadge>
+              <button className="secondary-button" onClick={() => contactDonor(match.match_id)}>Contact donor</button>
             </div>
           ))}
         </div>

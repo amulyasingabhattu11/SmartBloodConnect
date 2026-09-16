@@ -57,7 +57,8 @@ textarea {
 
 .topbar nav,
 .button-row,
-.hero-actions {
+.hero-actions,
+.inline-action {
   display: flex;
   gap: 12px;
   align-items: center;
@@ -313,6 +314,22 @@ textarea {
   font-weight: 650;
 }
 
+.contact-panel {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0;
+  padding: 14px;
+  border: 1px solid #bae6fd;
+  background: #f0f9ff;
+  color: #0f3b57;
+  border-radius: 8px;
+}
+
+.contact-panel p {
+  margin: 4px 0 0;
+  color: #475569;
+}
+
 .auth-page,
 .center-screen,
 .narrow-page {
@@ -460,4 +477,3 @@ textarea {
     padding: 16px;
   }
 }
-

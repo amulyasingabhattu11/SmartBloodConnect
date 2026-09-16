@@ -1,5 +1,5 @@
 import { AppError } from '../utils/AppError.js';
-import { findMatchById, updateDonorResponse } from '../repositories/matchRepository.js';
+import { findMatchById, findMatchContactForRequester, updateDonorResponse } from '../repositories/matchRepository.js';
 import { incrementDonorResponse } from '../repositories/donorRepository.js';
 import { findRequestById, getRequestProgress, updateRequestStatus } from '../repositories/requestRepository.js';
 import { notifyRequesterAccepted, setNotificationStatus } from '../services/notificationService.js';
@@ -41,3 +41,19 @@ const respondToMatch = async (req, res, response) => {
 export const acceptMatch = (req, res) => respondToMatch(req, res, 'ACCEPTED');
 export const declineMatch = (req, res) => respondToMatch(req, res, 'DECLINED');
 
+export const contactDonor = async (req, res) => {
+  const contact = await findMatchContactForRequester(req.params.id, req.user.user_id);
+  if (!contact) throw new AppError('Contact details are not available for this match.', 404);
+
+  res.json({
+    contact: {
+      donor_label: `Donor #${String(contact.donor_id).slice(0, 8)}`,
+      name: contact.name,
+      phone: contact.phone,
+      email: contact.email,
+      blood_group: contact.blood_group,
+      current_address: contact.location_label,
+      note: 'Contact details are shown for coordination only. Final donor eligibility must be verified by healthcare professionals.'
+    }
+  });
+};

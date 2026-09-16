@@ -228,6 +228,25 @@ const respond = (req, res, next, response) => {
 
 demoRoutes.post('/matches/:id/accept', requireDemoAuth, (req, res, next) => respond(req, res, next, 'ACCEPTED'));
 demoRoutes.post('/matches/:id/decline', requireDemoAuth, (req, res, next) => respond(req, res, next, 'DECLINED'));
+demoRoutes.get('/matches/:id/contact', requireDemoAuth, (req, res, next) => {
+  const match = db.matches.find((item) => item.match_id === req.params.id);
+  if (!match) return next(new AppError('Match was not found.', 404));
+  const request = db.requests.find((item) => item.request_id === match.request_id);
+  if (request.requester_id !== req.user.user_id && req.user.role !== 'ADMIN') return next(new AppError('You are not allowed to contact this donor.', 403));
+  const donor = db.donors.find((item) => item.donor_id === match.donor_id);
+  const user = db.users.find((item) => item.user_id === donor.user_id);
+  res.json({
+    contact: {
+      donor_label: `Donor #${donor.donor_id.slice(-4)}`,
+      name: user.name,
+      phone: user.phone,
+      email: user.email,
+      blood_group: donor.blood_group,
+      current_address: donor.location_label,
+      note: 'Contact details are shown for coordination only. Final donor eligibility must be verified by healthcare professionals.'
+    }
+  });
+});
 demoRoutes.get('/notifications', requireDemoAuth, (req, res) => res.json({ notifications: db.notifications.filter((item) => item.user_id === req.user.user_id) }));
 demoRoutes.patch('/notifications/:id/read', requireDemoAuth, (req, res, next) => {
   const notification = db.notifications.find((item) => item.notification_id === req.params.id);
