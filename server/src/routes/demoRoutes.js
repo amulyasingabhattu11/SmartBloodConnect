@@ -58,6 +58,8 @@ const requireDemoAdmin = (req, res, next) => {
   next();
 };
 
+const canAccessRequest = (request, user) => request.requester_id === user.user_id || user.role === 'ADMIN';
+
 const progressFor = (requestId) => {
   const matches = db.matches.filter((match) => match.request_id === requestId);
   return {
@@ -188,6 +190,7 @@ demoRoutes.post('/requests', requireDemoAuth, (req, res) => {
 demoRoutes.get('/requests/:id', requireDemoAuth, (req, res, next) => {
   const request = db.requests.find((item) => item.request_id === req.params.id);
   if (!request) return next(new AppError('Blood request was not found.', 404));
+  if (!canAccessRequest(request, req.user)) return next(new AppError('You are not allowed to access this blood request.', 403));
   const matches = db.matches.filter((match) => match.request_id === request.request_id).map((match) => {
     const donor = db.donors.find((item) => item.donor_id === match.donor_id);
     return { ...match, blood_group: donor.blood_group, availability_status: donor.availability_status, donor_label: `Donor #${donor.donor_id.slice(-4)}` };
@@ -197,19 +200,30 @@ demoRoutes.get('/requests/:id', requireDemoAuth, (req, res, next) => {
 demoRoutes.patch('/requests/:id/status', requireDemoAuth, (req, res, next) => {
   const request = db.requests.find((item) => item.request_id === req.params.id);
   if (!request) return next(new AppError('Blood request was not found.', 404));
+  if (!canAccessRequest(request, req.user)) return next(new AppError('You are not allowed to modify this blood request.', 403));
+  if (!['OPEN', 'MATCHING', 'PARTIALLY_MATCHED', 'FULFILLED', 'CANCELLED', 'EXPIRED'].includes(req.body.status)) return next(new AppError('Invalid request status.', 422));
   request.status = req.body.status;
   res.json({ request });
 });
 demoRoutes.post('/requests/:id/match', requireDemoAuth, (req, res, next) => {
   const request = db.requests.find((item) => item.request_id === req.params.id);
   if (!request) return next(new AppError('Blood request was not found.', 404));
+  if (!canAccessRequest(request, req.user)) return next(new AppError('You are not allowed to match this blood request.', 403));
   res.json({ matching: runDemoMatching(request) });
 });
-demoRoutes.get('/requests/:id/matches', requireDemoAuth, (req, res) => res.json({ matches: db.matches.filter((match) => match.request_id === req.params.id) }));
-demoRoutes.post('/requests/:id/notify-next-batch', requireDemoAuth, (req, res) => {
-  const next = db.matches.filter((match) => match.request_id === req.params.id && match.notification_status === 'PENDING').slice(0, 5);
-  next.forEach((match) => { match.notification_status = 'SENT'; match.batch_number = (match.batch_number || 1) + 1; });
-  res.json({ notified_count: next.length, batch_number: 2 });
+demoRoutes.get('/requests/:id/matches', requireDemoAuth, (req, res, next) => {
+  const request = db.requests.find((item) => item.request_id === req.params.id);
+  if (!request) return next(new AppError('Blood request was not found.', 404));
+  if (!canAccessRequest(request, req.user)) return next(new AppError('You are not allowed to view these matches.', 403));
+  res.json({ matches: db.matches.filter((match) => match.request_id === req.params.id) });
+});
+demoRoutes.post('/requests/:id/notify-next-batch', requireDemoAuth, (req, res, next) => {
+  const request = db.requests.find((item) => item.request_id === req.params.id);
+  if (!request) return next(new AppError('Blood request was not found.', 404));
+  if (!canAccessRequest(request, req.user)) return next(new AppError('You are not allowed to notify candidates for this request.', 403));
+  const pendingMatches = db.matches.filter((match) => match.request_id === req.params.id && match.notification_status === 'PENDING').slice(0, 5);
+  pendingMatches.forEach((match) => { match.notification_status = 'SENT'; match.batch_number = (match.batch_number || 1) + 1; });
+  res.json({ notified_count: pendingMatches.length, batch_number: 2 });
 });
 
 const respond = (req, res, next, response) => {
@@ -233,6 +247,7 @@ demoRoutes.get('/matches/:id/contact', requireDemoAuth, (req, res, next) => {
   if (!match) return next(new AppError('Match was not found.', 404));
   const request = db.requests.find((item) => item.request_id === match.request_id);
   if (request.requester_id !== req.user.user_id && req.user.role !== 'ADMIN') return next(new AppError('You are not allowed to contact this donor.', 403));
+  if (match.donor_response !== 'ACCEPTED') return next(new AppError('Donor contact details are available only after the donor accepts the request.', 403));
   const donor = db.donors.find((item) => item.donor_id === match.donor_id);
   const user = db.users.find((item) => item.user_id === donor.user_id);
   res.json({

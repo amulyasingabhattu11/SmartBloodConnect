@@ -140,10 +140,24 @@ Current tests cover:
 
 - Passwords are never stored in plain text.
 - JWT secrets and database credentials belong in environment variables.
+- Real database mode refuses to start unless `JWT_SECRET` is set to a strong non-default value.
+- API routes use security headers, CORS origin checks, JSON size limits, and rate limiting.
 - Requesters do not receive exact donor coordinates, phone numbers, email addresses, or private contact details.
+- Donor contact details are revealed only after the donor accepts the request.
 - Ownership checks prevent users from modifying other users' requests or donor responses.
 - Admin endpoints require admin role.
 - Validation rejects invalid blood groups, coordinates, units, urgency, and expired requests.
+
+## Production Security Checklist
+
+- Set `DEMO_MODE=false`.
+- Use a 32+ character random `JWT_SECRET`.
+- Use HTTPS in deployment.
+- Set `CLIENT_ORIGIN` to the exact frontend domain.
+- Use managed PostgreSQL credentials from a secret manager.
+- Disable seeded demo users in production.
+- Review logs for repeated failed login/contact attempts.
+- Do not expose donor exact coordinates or contact details before donor consent.
 
 ## Limitations
 

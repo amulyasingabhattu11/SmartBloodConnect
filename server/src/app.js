@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -18,12 +19,49 @@ import { demoRoutes } from './routes/demoRoutes.js';
 export const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const clientDistPath = path.resolve(__dirname, '../../client/dist');
+const allowedOrigins = new Set([env.clientOrigin]);
 
-app.use(helmet());
+if (env.demoMode || env.nodeEnv !== 'production') {
+  allowedOrigins.add(`http://localhost:${env.port}`);
+  allowedOrigins.add(`http://127.0.0.1:${env.port}`);
+}
+
+app.disable('x-powered-by');
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        connectSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+        frameAncestors: ["'none'"],
+        upgradeInsecureRequests: env.nodeEnv === 'production' ? [] : null
+      }
+    },
+    crossOriginEmbedderPolicy: false
+  })
+);
 app.use(
   cors({
-    origin: env.clientOrigin,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.has(origin)) return callback(null, true);
+      return callback(new Error('CORS origin is not allowed.'));
+    },
     credentials: true
+  })
+);
+app.use(
+  '/api',
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: 'Too many requests. Please try again later.' }
   })
 );
 app.use(express.json({ limit: '1mb' }));

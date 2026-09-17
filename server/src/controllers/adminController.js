@@ -1,6 +1,8 @@
 import { query } from '../config/db.js';
 import { listUsers, updateUserStatus } from '../repositories/userRepository.js';
 import { listAllRequests, updateRequestStatus } from '../repositories/requestRepository.js';
+import { requestStatusSchema } from '../validators/schemas.js';
+import { AppError } from '../utils/AppError.js';
 
 export const stats = async (req, res) => {
   const result = await query(
@@ -18,7 +20,11 @@ export const users = async (req, res) => {
 };
 
 export const setUserStatus = async (req, res) => {
+  if (!['ACTIVE', 'DISABLED'].includes(req.body.account_status)) {
+    throw new AppError('Invalid account status.', 422);
+  }
   const user = await updateUserStatus(req.params.id, req.body.account_status);
+  if (!user) throw new AppError('User was not found.', 404);
   res.json({ user });
 };
 
@@ -27,7 +33,8 @@ export const requests = async (req, res) => {
 };
 
 export const setRequestStatus = async (req, res) => {
-  const request = await updateRequestStatus(req.params.id, req.body.status);
+  const payload = requestStatusSchema.parse(req.body);
+  const request = await updateRequestStatus(req.params.id, payload.status);
+  if (!request) throw new AppError('Blood request was not found.', 404);
   res.json({ request });
 };
-

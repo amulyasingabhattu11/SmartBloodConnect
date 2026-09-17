@@ -79,7 +79,14 @@ export const RequestDetailsPage = () => {
               <strong>{match.donor_label} - {match.blood_group}</strong>
               <span>{Number(match.distance_km).toFixed(1)} km approx. Candidate Priority Score: {match.priority_score}</span>
               <StatusBadge>{match.donor_response}</StatusBadge>
-              <button className="secondary-button" onClick={() => contactDonor(match.match_id)}>Contact donor</button>
+              <button
+                className="secondary-button"
+                onClick={() => contactDonor(match.match_id)}
+                disabled={match.donor_response !== 'ACCEPTED'}
+                title={match.donor_response === 'ACCEPTED' ? 'Show donor contact details' : 'Available after donor accepts'}
+              >
+                Contact donor
+              </button>
             </div>
           ))}
         </div>
