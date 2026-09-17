@@ -21,8 +21,8 @@ const db = {
     { user_id: 'user-mina', name: 'Mina Donor', email: 'mina@ruby.demo', phone: '+910000000004', password_hash: demoHash, role: 'USER', account_status: 'ACTIVE' }
   ],
   donors: [
-    { donor_id: 'donor-dev', user_id: 'user-dev', blood_group: 'B+', latitude: 17.444, longitude: 78.377, location_label: 'HITEC City demo area', last_donation_date: '2025-01-01', availability_status: 'AVAILABLE', response_count: 8, accept_count: 6, decline_count: 2 },
-    { donor_id: 'donor-mina', user_id: 'user-mina', blood_group: 'O+', latitude: 17.43, longitude: 78.41, location_label: 'Jubilee Hills demo area', last_donation_date: '2025-02-01', availability_status: 'AVAILABLE', response_count: 4, accept_count: 3, decline_count: 1 }
+    { donor_id: 'donor-dev', user_id: 'user-dev', blood_group: 'B+', latitude: 17.444, longitude: 78.377, location_label: 'HITEC City demo area', location_accuracy_m: 18, location_captured_at: new Date(Date.now() - 3 * 60 * 1000).toISOString(), last_donation_date: '2025-01-01', availability_status: 'AVAILABLE', response_count: 8, accept_count: 6, decline_count: 2 },
+    { donor_id: 'donor-mina', user_id: 'user-mina', blood_group: 'O+', latitude: 17.43, longitude: 78.41, location_label: 'Jubilee Hills demo area', location_accuracy_m: 42, location_captured_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), last_donation_date: '2025-02-01', availability_status: 'AVAILABLE', response_count: 4, accept_count: 3, decline_count: 1 }
   ],
   requests: [
     { request_id: 'request-demo', requester_id: 'user-asha', patient_reference: 'Patient R-102', required_blood_group: 'B+', hospital_name: 'Ruby Demo Hospital', hospital_address: 'Madhapur demo hospital zone', latitude: 17.4485, longitude: 78.3908, units_required: 2, urgency: 'CRITICAL', required_before: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(), status: 'MATCHING', note: 'Demo emergency request', created_at: new Date().toISOString() }
@@ -58,6 +58,11 @@ const requireDemoAdmin = (req, res, next) => {
   next();
 };
 
+const requireDemoNonAdmin = (req, res, next) => {
+  if (req.user?.role === 'ADMIN') return next(new AppError('Administrator accounts cannot create donor profiles.', 403));
+  next();
+};
+
 const canAccessRequest = (request, user) => request.requester_id === user.user_id || user.role === 'ADMIN';
 
 const progressFor = (requestId) => {
@@ -75,6 +80,7 @@ const runDemoMatching = (request) => {
   const groups = compatibleDonorGroupsForRecipient(request.required_blood_group);
   const candidates = db.donors
     .filter((donor) => groups.includes(donor.blood_group) && donor.availability_status === 'AVAILABLE')
+    .filter((donor) => donor.location_captured_at && Date.now() - new Date(donor.location_captured_at).getTime() <= 60 * 60 * 1000)
     .map((donor) => {
       const distance_km = calculateDistanceKm(request, donor);
       return { donor, distance_km, priority_score: calculatePriorityScore({ donor, distanceKm: distance_km, radiusKm: 30 }) };
@@ -137,8 +143,8 @@ demoRoutes.post('/auth/login', async (req, res, next) => {
 demoRoutes.get('/auth/me', requireDemoAuth, (req, res) => res.json({ user: req.user }));
 demoRoutes.post('/auth/logout', requireDemoAuth, (req, res) => res.json({ message: 'Logged out.' }));
 
-demoRoutes.get('/donors/profile', requireDemoAuth, (req, res) => res.json({ profile: db.donors.find((donor) => donor.user_id === req.user.user_id) || null }));
-demoRoutes.post('/donors/profile', requireDemoAuth, (req, res) => {
+demoRoutes.get('/donors/profile', requireDemoAuth, requireDemoNonAdmin, (req, res) => res.json({ profile: db.donors.find((donor) => donor.user_id === req.user.user_id) || null }));
+demoRoutes.post('/donors/profile', requireDemoAuth, requireDemoNonAdmin, (req, res) => {
   let profile = db.donors.find((donor) => donor.user_id === req.user.user_id);
   if (profile) Object.assign(profile, req.body);
   else {
@@ -147,7 +153,7 @@ demoRoutes.post('/donors/profile', requireDemoAuth, (req, res) => {
   }
   res.json({ profile });
 });
-demoRoutes.put('/donors/profile', requireDemoAuth, (req, res) => {
+demoRoutes.put('/donors/profile', requireDemoAuth, requireDemoNonAdmin, (req, res) => {
   let profile = db.donors.find((donor) => donor.user_id === req.user.user_id);
   if (profile) Object.assign(profile, req.body);
   else {
@@ -156,18 +162,18 @@ demoRoutes.put('/donors/profile', requireDemoAuth, (req, res) => {
   }
   res.json({ profile });
 });
-demoRoutes.patch('/donors/availability', requireDemoAuth, (req, res, next) => {
+demoRoutes.patch('/donors/availability', requireDemoAuth, requireDemoNonAdmin, (req, res, next) => {
   const profile = db.donors.find((donor) => donor.user_id === req.user.user_id);
   if (!profile) return next(new AppError('Create a donor profile before changing availability.', 404));
   profile.availability_status = req.body.availability_status;
   res.json({ profile });
 });
-demoRoutes.get('/donors/history', requireDemoAuth, (req, res) => {
+demoRoutes.get('/donors/history', requireDemoAuth, requireDemoNonAdmin, (req, res) => {
   const profile = db.donors.find((donor) => donor.user_id === req.user.user_id);
   const history = profile ? db.matches.filter((match) => match.donor_id === profile.donor_id) : [];
   res.json({ history });
 });
-demoRoutes.get('/donors/nearby-requests', requireDemoAuth, (req, res) => {
+demoRoutes.get('/donors/nearby-requests', requireDemoAuth, requireDemoNonAdmin, (req, res) => {
   const profile = db.donors.find((donor) => donor.user_id === req.user.user_id);
   const requests = profile ? db.requests.filter((request) => isCompatibleForRbcDonation(profile.blood_group, request.required_blood_group)) : [];
   res.json({ requests });
@@ -274,4 +280,19 @@ demoRoutes.get('/blood-banks/nearby', requireDemoAuth, (req, res) => res.json({ 
 demoRoutes.get('/blood-banks/:id/inventory', requireDemoAuth, (req, res) => res.json({ demo_data_notice: 'Demo mode inventory only.', inventory: db.banks.filter((bank) => bank.blood_bank_id === req.params.id) }));
 demoRoutes.get('/admin/stats', requireDemoAuth, requireDemoAdmin, (req, res) => res.json({ stats: { users: db.users.length, donors: db.donors.length, active_requests: db.requests.length, accepted_matches: db.matches.filter((m) => m.donor_response === 'ACCEPTED').length } }));
 demoRoutes.get('/admin/users', requireDemoAuth, requireDemoAdmin, (req, res) => res.json({ users: db.users.map(safeUser) }));
+demoRoutes.get('/admin/donors', requireDemoAuth, requireDemoAdmin, (req, res) => res.json({ donors: db.donors.map((donor) => ({ ...donor, ...safeUser(db.users.find((user) => user.user_id === donor.user_id)) })) }));
+demoRoutes.patch('/admin/users/:id/status', requireDemoAuth, requireDemoAdmin, (req, res, next) => {
+  const user = db.users.find((item) => item.user_id === req.params.id);
+  if (!user) return next(new AppError('User was not found.', 404));
+  if (!['ACTIVE', 'DISABLED'].includes(req.body.account_status)) return next(new AppError('Invalid account status.', 422));
+  user.account_status = req.body.account_status;
+  res.json({ user: safeUser(user) });
+});
 demoRoutes.get('/admin/requests', requireDemoAuth, requireDemoAdmin, (req, res) => res.json({ requests: db.requests.map((request) => ({ ...request, requester_name: db.users.find((user) => user.user_id === request.requester_id)?.name })) }));
+demoRoutes.patch('/admin/requests/:id/status', requireDemoAuth, requireDemoAdmin, (req, res, next) => {
+  const request = db.requests.find((item) => item.request_id === req.params.id);
+  if (!request) return next(new AppError('Blood request was not found.', 404));
+  if (!['OPEN', 'MATCHING', 'PARTIALLY_MATCHED', 'FULFILLED', 'CANCELLED', 'EXPIRED'].includes(req.body.status)) return next(new AppError('Invalid request status.', 422));
+  request.status = req.body.status;
+  res.json({ request });
+});

@@ -20,8 +20,8 @@ export const AppLayout = () => {
           <NavLink to="/app"><LayoutDashboard size={18} /> Dashboard</NavLink>
           <NavLink to="/app/requests/new"><HeartPulse size={18} /> Request Blood</NavLink>
           <NavLink to="/app/requests"><HeartPulse size={18} /> My Requests</NavLink>
-          <NavLink to="/app/donor"><UserRoundPlus size={18} /> Donor Profile</NavLink>
-          <NavLink to="/app/notifications"><Bell size={18} /> Notifications</NavLink>
+          {user?.role !== 'ADMIN' && <NavLink to="/app/donor"><UserRoundPlus size={18} /> Donor Profile</NavLink>}
+          {user?.role !== 'ADMIN' && <NavLink to="/app/notifications"><Bell size={18} /> Notifications</NavLink>}
           {user?.role === 'ADMIN' && <NavLink to="/app/admin"><Shield size={18} /> Admin</NavLink>}
         </nav>
         <button className="icon-text-button" onClick={signOut}><LogOut size={18} /> Logout</button>

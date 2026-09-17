@@ -21,6 +21,16 @@ const Protected = ({ children }) => {
   return isAuthed ? children : <Navigate to="/login" replace />;
 };
 
+const NonAdmin = ({ children }) => {
+  const { user } = useAuth();
+  return user?.role === 'ADMIN' ? <Navigate to="/app/admin" replace /> : children;
+};
+
+const AdminOnly = ({ children }) => {
+  const { user } = useAuth();
+  return user?.role === 'ADMIN' ? children : <Navigate to="/app" replace />;
+};
+
 export const App = () => (
   <Routes>
     <Route element={<PublicLayout />}>
@@ -31,12 +41,12 @@ export const App = () => (
     </Route>
     <Route path="/app" element={<Protected><AppLayout /></Protected>}>
       <Route index element={<DashboardPage />} />
-      <Route path="donor" element={<DonorProfilePage />} />
+      <Route path="donor" element={<NonAdmin><DonorProfilePage /></NonAdmin>} />
       <Route path="requests/new" element={<CreateRequestPage />} />
       <Route path="requests" element={<MyRequestsPage />} />
       <Route path="requests/:id" element={<RequestDetailsPage />} />
-      <Route path="notifications" element={<NotificationsPage />} />
-      <Route path="admin" element={<AdminPage />} />
+      <Route path="notifications" element={<NonAdmin><NotificationsPage /></NonAdmin>} />
+      <Route path="admin" element={<AdminOnly><AdminPage /></AdminOnly>} />
     </Route>
   </Routes>
 );

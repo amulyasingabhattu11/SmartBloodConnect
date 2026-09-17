@@ -42,7 +42,7 @@ export const acceptMatch = (req, res) => respondToMatch(req, res, 'ACCEPTED');
 export const declineMatch = (req, res) => respondToMatch(req, res, 'DECLINED');
 
 export const contactDonor = async (req, res) => {
-  const contact = await findMatchContactForRequester(req.params.id, req.user.user_id);
+  const contact = await findMatchContactForRequester(req.params.id, req.user.user_id, req.user.role);
   if (!contact) throw new AppError('Contact details are not available for this match.', 404);
   if (contact.donor_response !== 'ACCEPTED') {
     throw new AppError('Donor contact details are available only after the donor accepts the request.', 403);

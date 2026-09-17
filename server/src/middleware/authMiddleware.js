@@ -34,3 +34,9 @@ export const requireAdmin = (req, res, next) => {
   next();
 };
 
+export const requireNonAdmin = (req, res, next) => {
+  if (req.user?.role === 'ADMIN') {
+    return next(new AppError('Administrator accounts cannot create donor profiles.', 403));
+  }
+  next();
+};

@@ -4,8 +4,8 @@ export const createBloodRequest = async (requesterId, payload) => {
   const result = await query(
     `INSERT INTO blood_requests
       (requester_id, patient_reference, required_blood_group, hospital_name, hospital_address,
-       latitude, longitude, units_required, urgency, required_before, note, status)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'MATCHING')
+       latitude, longitude, location_accuracy_m, location_captured_at, units_required, urgency, required_before, note, status)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'MATCHING')
      RETURNING *`,
     [
       requesterId,
@@ -15,6 +15,8 @@ export const createBloodRequest = async (requesterId, payload) => {
       payload.hospital_address,
       payload.latitude,
       payload.longitude,
+      payload.location_accuracy_m,
+      payload.location_captured_at,
       payload.units_required,
       payload.urgency,
       payload.required_before,
@@ -102,4 +104,3 @@ export const getDashboardStats = async (userId) => {
   );
   return result.rows[0];
 };
-

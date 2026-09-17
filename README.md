@@ -8,6 +8,7 @@ Ruby does not medically clear donors and does not guarantee transfusion safety. 
 
 - JWT authentication with bcrypt password hashing.
 - Donor profile and availability management.
+- Timestamped GPS capture with accuracy and stale-location filtering.
 - Emergency blood request creation and tracking.
 - Deterministic red-blood-cell compatibility engine.
 - Preliminary eligibility filtering.
@@ -18,6 +19,7 @@ Ruby does not medically clear donors and does not guarantee transfusion safety. 
 - Batch notifications to avoid alerting every donor at once.
 - Demo blood-bank inventory with freshness labels.
 - Admin dashboard for users, requests, and system statistics.
+- Admin-only donor location registry with freshness indicators and map links.
 - Responsive React UI.
 
 ## Architecture
@@ -89,6 +91,52 @@ Frontend: `http://localhost:5173`
 
 Backend health check: `http://localhost:5000/api/health`
 
+## Native Windows PostgreSQL Setup (No Docker)
+
+PostgreSQL is not currently installed or listening on port `5432` on this computer. Ruby supports a normal local PostgreSQL installation; PostGIS is optional.
+
+1. Install PostgreSQL 16 or newer using the official Windows installer. Keep port `5432` and remember the password chosen for the `postgres` user.
+2. Open **SQL Shell (psql)** or pgAdmin and create the database:
+
+```sql
+CREATE DATABASE ruby_blood;
+```
+
+3. Update `server/.env`:
+
+```env
+NODE_ENV=development
+DEMO_MODE=false
+PORT=5000
+CLIENT_ORIGIN=http://localhost:5000
+DATABASE_URL=postgres://postgres:YOUR_PASSWORD@localhost:5432/ruby_blood
+DATABASE_SSL=false
+JWT_SECRET=replace-this-with-a-random-secret-at-least-32-characters-long
+```
+
+Percent-encode special characters in the password when placing it in `DATABASE_URL`.
+
+4. Verify the connection and create the schema:
+
+```powershell
+npm run db:check
+npm run migrate
+```
+
+5. Optional: load fictional accounts. This clears existing application tables, so use it only on a disposable development database:
+
+```powershell
+npm run seed
+```
+
+6. Build and run the database-backed app:
+
+```powershell
+npm run app
+```
+
+Open `http://localhost:5000`. The health endpoint must report `"mode":"database"` and `"database":"connected"`.
+
 ## Run Without PostgreSQL or Docker
 
 For a temporary local demo, enable in-memory mode. Data resets whenever the backend restarts, but the UI, auth, donor profiles, request creation, matching, notifications, and admin pages can be tried without PostgreSQL.
@@ -146,6 +194,8 @@ Current tests cover:
 - Donor contact details are revealed only after the donor accepts the request.
 - Ownership checks prevent users from modifying other users' requests or donor responses.
 - Admin endpoints require admin role.
+- Administrator accounts cannot create donor profiles or respond as donors.
+- Donor locations older than `MATCH_LOCATION_MAX_AGE_MINUTES` are excluded from matching.
 - Validation rejects invalid blood groups, coordinates, units, urgency, and expired requests.
 
 ## Production Security Checklist

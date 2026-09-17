@@ -4,9 +4,11 @@ import { MedicalDisclaimer } from '../components/ui/MedicalDisclaimer.jsx';
 
 const initial = {
   blood_group: 'B+',
-  latitude: '17.4485',
-  longitude: '78.3908',
-  location_label: 'Demo area',
+  latitude: '',
+  longitude: '',
+  location_label: '',
+  location_accuracy_m: null,
+  location_captured_at: null,
   last_donation_date: '',
   availability_status: 'AVAILABLE'
 };
@@ -30,6 +32,10 @@ export const DonorProfilePage = () => {
     setError('');
     setMessage('');
     try {
+      if (!form.location_captured_at) {
+        setError('Capture your current live location before saving the donor profile.');
+        return;
+      }
       await api.post('/donors/profile', { ...form, last_donation_date: form.last_donation_date || null });
       setMessage('Donor profile saved.');
     } catch (err) {
@@ -50,7 +56,9 @@ export const DonorProfilePage = () => {
         setForm((current) => ({
           ...current,
           latitude: position.coords.latitude.toFixed(6),
-          longitude: position.coords.longitude.toFixed(6)
+          longitude: position.coords.longitude.toFixed(6),
+          location_accuracy_m: Number(position.coords.accuracy.toFixed(2)),
+          location_captured_at: new Date(position.timestamp).toISOString()
         }));
         setMessage('Exact live coordinates captured. Enter the readable current address below.');
         setLocationLoading(false);
@@ -77,8 +85,9 @@ export const DonorProfilePage = () => {
         <span className="muted">Distance and radius matching use these exact coordinates.</span>
       </div>
       <label className="full">Current address<input value={form.location_label} onChange={(e) => setForm({ ...form, location_label: e.target.value })} placeholder="House/area/street or current readable address" /></label>
-      <label>Exact live latitude<input value={form.latitude} onChange={(e) => setForm({ ...form, latitude: e.target.value })} /></label>
-      <label>Exact live longitude<input value={form.longitude} onChange={(e) => setForm({ ...form, longitude: e.target.value })} /></label>
+      <label>Exact live latitude<input value={form.latitude} readOnly /></label>
+      <label>Exact live longitude<input value={form.longitude} readOnly /></label>
+      {form.location_captured_at && <p className="full muted">Captured {new Date(form.location_captured_at).toLocaleString()} with approximately {Math.round(form.location_accuracy_m || 0)} m accuracy.</p>}
       <label>Last donation date<input type="date" value={form.last_donation_date} onChange={(e) => setForm({ ...form, last_donation_date: e.target.value })} /></label>
       <label>Availability<select value={form.availability_status} onChange={(e) => setForm({ ...form, availability_status: e.target.value })}><option>AVAILABLE</option><option>UNAVAILABLE</option><option>TEMP_DISABLED</option></select></label>
       <button className="primary-button">Save profile</button>

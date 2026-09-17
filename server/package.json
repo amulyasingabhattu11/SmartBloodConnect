@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
+    "db:check": "node src/utils/checkDatabase.js",
     "migrate": "node src/utils/runMigrations.js",
     "seed": "node src/utils/runSeed.js",
     "test": "vitest run"

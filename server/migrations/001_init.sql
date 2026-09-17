@@ -1,5 +1,20 @@
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-CREATE EXTENSION IF NOT EXISTS postgis;
+DO $$
+BEGIN
+  CREATE EXTENSION IF NOT EXISTS pgcrypto;
+EXCEPTION
+  WHEN undefined_file OR insufficient_privilege OR feature_not_supported THEN
+    RAISE NOTICE 'pgcrypto extension is unavailable; PostgreSQL built-in UUID generation will be used.';
+END
+$$;
+
+DO $$
+BEGIN
+  CREATE EXTENSION IF NOT EXISTS postgis;
+EXCEPTION
+  WHEN undefined_file OR insufficient_privilege OR feature_not_supported THEN
+    RAISE NOTICE 'PostGIS is unavailable; Ruby will use application-level distance calculations.';
+END
+$$;
 
 CREATE TABLE IF NOT EXISTS users (
   user_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -20,6 +35,8 @@ CREATE TABLE IF NOT EXISTS donor_profiles (
   latitude DECIMAL(9,6) NOT NULL CHECK (latitude BETWEEN -90 AND 90),
   longitude DECIMAL(9,6) NOT NULL CHECK (longitude BETWEEN -180 AND 180),
   location_label VARCHAR(255) NOT NULL,
+  location_accuracy_m DECIMAL(10,2) CHECK (location_accuracy_m IS NULL OR location_accuracy_m >= 0),
+  location_captured_at TIMESTAMPTZ,
   last_donation_date DATE,
   availability_status VARCHAR(20) NOT NULL DEFAULT 'AVAILABLE' CHECK (availability_status IN ('AVAILABLE', 'UNAVAILABLE', 'TEMP_DISABLED')),
   response_count INTEGER NOT NULL DEFAULT 0,
@@ -38,6 +55,8 @@ CREATE TABLE IF NOT EXISTS blood_requests (
   hospital_address TEXT NOT NULL,
   latitude DECIMAL(9,6) NOT NULL CHECK (latitude BETWEEN -90 AND 90),
   longitude DECIMAL(9,6) NOT NULL CHECK (longitude BETWEEN -180 AND 180),
+  location_accuracy_m DECIMAL(10,2) CHECK (location_accuracy_m IS NULL OR location_accuracy_m >= 0),
+  location_captured_at TIMESTAMPTZ,
   units_required INTEGER NOT NULL CHECK (units_required > 0 AND units_required <= 20),
   urgency VARCHAR(20) NOT NULL CHECK (urgency IN ('NORMAL', 'URGENT', 'CRITICAL')),
   required_before TIMESTAMPTZ NOT NULL,
@@ -99,4 +118,3 @@ CREATE INDEX IF NOT EXISTS idx_blood_requests_status ON blood_requests(status);
 CREATE INDEX IF NOT EXISTS idx_donor_matches_request ON donor_matches(request_id);
 CREATE INDEX IF NOT EXISTS idx_donor_matches_donor ON donor_matches(donor_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
-

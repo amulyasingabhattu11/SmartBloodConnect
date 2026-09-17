@@ -24,6 +24,8 @@ export const donorProfileSchema = z.object({
   latitude,
   longitude,
   location_label: z.string().trim().min(2).max(255),
+  location_accuracy_m: z.coerce.number().min(0).max(100000).nullable().optional(),
+  location_captured_at: z.string().datetime(),
   last_donation_date: z.string().date().nullable().optional(),
   availability_status: z.enum(['AVAILABLE', 'UNAVAILABLE', 'TEMP_DISABLED']).default('AVAILABLE')
 });
@@ -39,6 +41,8 @@ export const bloodRequestSchema = z.object({
   hospital_address: z.string().trim().min(2),
   latitude,
   longitude,
+  location_accuracy_m: z.coerce.number().min(0).max(100000),
+  location_captured_at: z.string().datetime(),
   units_required: z.coerce.number().int().min(1).max(20),
   urgency: z.enum(URGENCY_LEVELS),
   required_before: z.string().datetime(),
@@ -48,4 +52,3 @@ export const bloodRequestSchema = z.object({
 export const requestStatusSchema = z.object({
   status: z.enum(REQUEST_STATUSES)
 });
-

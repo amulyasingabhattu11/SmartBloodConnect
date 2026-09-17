@@ -83,7 +83,7 @@ export const findMatchById = async (matchId) => {
   return result.rows[0] || null;
 };
 
-export const findMatchContactForRequester = async (matchId, requesterId) => {
+export const findMatchContactForRequester = async (matchId, requesterId, requesterRole) => {
   const result = await query(
     `SELECT dm.match_id, dm.request_id, dm.donor_response, dm.notification_status,
       dp.donor_id, dp.blood_group, dp.location_label,
@@ -93,8 +93,8 @@ export const findMatchContactForRequester = async (matchId, requesterId) => {
      JOIN donor_profiles dp ON dp.donor_id = dm.donor_id
      JOIN users u ON u.user_id = dp.user_id
      JOIN blood_requests br ON br.request_id = dm.request_id
-     WHERE dm.match_id = $1 AND br.requester_id = $2`,
-    [matchId, requesterId]
+     WHERE dm.match_id = $1 AND (br.requester_id = $2 OR $3 = 'ADMIN')`,
+    [matchId, requesterId, requesterRole]
   );
   return result.rows[0] || null;
 };

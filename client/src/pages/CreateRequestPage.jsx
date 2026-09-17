@@ -14,8 +14,10 @@ export const CreateRequestPage = () => {
     urgency: 'CRITICAL',
     hospital_name: '',
     hospital_address: '',
-    latitude: '17.4485',
-    longitude: '78.3908',
+    latitude: '',
+    longitude: '',
+    location_accuracy_m: null,
+    location_captured_at: null,
     required_before: '',
     note: ''
   });
@@ -24,6 +26,14 @@ export const CreateRequestPage = () => {
     event.preventDefault();
     setError('');
     try {
+      if (!form.location_captured_at) {
+        setError('Capture the exact hospital or request location before creating the request.');
+        return;
+      }
+      if (!form.required_before) {
+        setError('Select the required-by date and time.');
+        return;
+      }
       const payload = { ...form, required_before: new Date(form.required_before).toISOString() };
       const res = await api.post('/requests', payload);
       navigate(`/app/requests/${res.data.request.request_id}`);
@@ -45,7 +55,9 @@ export const CreateRequestPage = () => {
         setForm((current) => ({
           ...current,
           latitude: position.coords.latitude.toFixed(6),
-          longitude: position.coords.longitude.toFixed(6)
+          longitude: position.coords.longitude.toFixed(6),
+          location_accuracy_m: Number(position.coords.accuracy.toFixed(2)),
+          location_captured_at: new Date(position.timestamp).toISOString()
         }));
         setLocationLoading(false);
       },
@@ -74,8 +86,9 @@ export const CreateRequestPage = () => {
         </button>
         <span className="muted">Use this if you are currently at the hospital/request location.</span>
       </div>
-      <label>Exact request latitude<input value={form.latitude} onChange={(e) => setForm({ ...form, latitude: e.target.value })} /></label>
-      <label>Exact request longitude<input value={form.longitude} onChange={(e) => setForm({ ...form, longitude: e.target.value })} /></label>
+      <label>Exact request latitude<input value={form.latitude} readOnly /></label>
+      <label>Exact request longitude<input value={form.longitude} readOnly /></label>
+      {form.location_captured_at && <p className="full muted">Captured {new Date(form.location_captured_at).toLocaleString()} with approximately {Math.round(form.location_accuracy_m || 0)} m accuracy.</p>}
       <label>Required before<input type="datetime-local" value={form.required_before} onChange={(e) => setForm({ ...form, required_before: e.target.value })} /></label>
       <label className="full">Note<textarea value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} /></label>
       <button className="primary-button">Create and match donors</button>

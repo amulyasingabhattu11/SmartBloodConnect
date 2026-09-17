@@ -15,6 +15,7 @@ import { notificationRoutes } from './routes/notificationRoutes.js';
 import { bloodBankRoutes } from './routes/bloodBankRoutes.js';
 import { adminRoutes } from './routes/adminRoutes.js';
 import { demoRoutes } from './routes/demoRoutes.js';
+import { checkDatabaseConnection } from './config/db.js';
 
 export const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -66,8 +67,16 @@ app.use(
 );
 app.use(express.json({ limit: '1mb' }));
 
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', service: 'ruby-api', demoMode: env.demoMode });
+app.get('/api/health', async (req, res) => {
+  if (env.demoMode) {
+    return res.json({ status: 'ok', service: 'ruby-api', mode: 'demo', database: 'not-used' });
+  }
+  try {
+    const database = await checkDatabaseConnection();
+    return res.json({ status: 'ok', service: 'ruby-api', mode: 'database', database: 'connected', database_name: database.database_name });
+  } catch {
+    return res.status(503).json({ status: 'error', service: 'ruby-api', mode: 'database', database: 'unavailable' });
+  }
 });
 
 if (env.demoMode) {

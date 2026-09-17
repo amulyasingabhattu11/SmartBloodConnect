@@ -304,6 +304,16 @@ textarea {
   color: #475569;
 }
 
+.status-badge-success {
+  background: #eaf7ef;
+  color: var(--success);
+}
+
+.status-badge-warning {
+  background: #fff8e6;
+  color: var(--warning);
+}
+
 .medical-disclaimer {
   background: #fff8e6;
   border: 1px solid #f0d58b;
@@ -328,6 +338,29 @@ textarea {
 .contact-panel p {
   margin: 4px 0 0;
   color: #475569;
+}
+
+.admin-heading {
+  margin: 0;
+}
+
+.admin-heading h2,
+.admin-heading p {
+  margin: 0;
+}
+
+.admin-location-row {
+  grid-template-columns: minmax(240px, 1fr) minmax(320px, auto);
+}
+
+.admin-location-row > div:first-child,
+.location-details {
+  display: grid;
+  gap: 6px;
+}
+
+.location-details {
+  justify-items: end;
 }
 
 .auth-page,
@@ -471,6 +504,14 @@ textarea {
 
   .row-card {
     grid-template-columns: 1fr;
+  }
+
+  .admin-location-row {
+    grid-template-columns: 1fr;
+  }
+
+  .location-details {
+    justify-items: start;
   }
 
   .content {

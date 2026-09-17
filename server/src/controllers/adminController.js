@@ -3,6 +3,7 @@ import { listUsers, updateUserStatus } from '../repositories/userRepository.js';
 import { listAllRequests, updateRequestStatus } from '../repositories/requestRepository.js';
 import { requestStatusSchema } from '../validators/schemas.js';
 import { AppError } from '../utils/AppError.js';
+import { listDonorsForAdmin } from '../repositories/donorRepository.js';
 
 export const stats = async (req, res) => {
   const result = await query(
@@ -17,6 +18,10 @@ export const stats = async (req, res) => {
 
 export const users = async (req, res) => {
   res.json({ users: await listUsers() });
+};
+
+export const donors = async (req, res) => {
+  res.json({ donors: await listDonorsForAdmin() });
 };
 
 export const setUserStatus = async (req, res) => {

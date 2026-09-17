@@ -16,8 +16,16 @@ INSERT INTO donor_profiles (donor_id, user_id, blood_group, latitude, longitude,
 ('20000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000006', 'A+', 17.385000, 78.486700, 'Central demo area', now()::date - 180, 'UNAVAILABLE', 3, 2, 1),
 ('20000000-0000-0000-0000-000000000007', '10000000-0000-0000-0000-000000000007', 'O-', 17.520000, 78.450000, 'North demo area', now()::date - 400, 'AVAILABLE', 10, 7, 3);
 
+UPDATE donor_profiles
+SET location_accuracy_m = 25,
+    location_captured_at = now();
+
 INSERT INTO blood_requests (request_id, requester_id, patient_reference, required_blood_group, hospital_name, hospital_address, latitude, longitude, units_required, urgency, required_before, status, note) VALUES
 ('30000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000002', 'Patient R-102', 'B+', 'Ruby Demo Hospital', 'Madhapur demo hospital zone', 17.448500, 78.390800, 2, 'CRITICAL', now() + interval '8 hours', 'MATCHING', 'Demo emergency request');
+
+UPDATE blood_requests
+SET location_accuracy_m = 20,
+    location_captured_at = now();
 
 INSERT INTO blood_banks (blood_bank_id, name, address, latitude, longitude, phone, verified_status) VALUES
 ('40000000-0000-0000-0000-000000000001', 'DEMO Ruby City Blood Bank', 'Demo medical district', 17.440000, 78.395000, '+910000000101', 'DEMO'),
@@ -28,4 +36,3 @@ INSERT INTO blood_inventory (blood_bank_id, blood_group, units_available, last_u
 ('40000000-0000-0000-0000-000000000001', 'O+', 5, now() - interval '1 hour'),
 ('40000000-0000-0000-0000-000000000002', 'B+', 0, now() - interval '3 hours'),
 ('40000000-0000-0000-0000-000000000002', 'O-', 1, now() - interval '2 hours');
-
