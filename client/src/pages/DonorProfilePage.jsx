@@ -36,8 +36,15 @@ export const DonorProfilePage = () => {
         setError('Capture your current live location before saving the donor profile.');
         return;
       }
-      await api.post('/donors/profile', { ...form, last_donation_date: form.last_donation_date || null });
-      setMessage('Donor profile saved.');
+      const response = await api.post('/donors/profile', { ...form, last_donation_date: form.last_donation_date || null });
+      const matching = response.data.matching;
+      if (matching?.notifications_sent > 0) {
+        setMessage(`Donor profile saved. ${matching.notifications_sent} matching request notification sent.`);
+      } else if (matching?.requests_rechecked > 0) {
+        setMessage('Donor profile saved. Active nearby requests were checked, but no new notification was needed.');
+      } else {
+        setMessage('Donor profile saved. No compatible active requests were found nearby.');
+      }
     } catch (err) {
       setError(apiErrorMessage(err));
     }

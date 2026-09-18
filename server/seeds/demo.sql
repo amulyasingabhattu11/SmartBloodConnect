@@ -1,13 +1,13 @@
 TRUNCATE notifications, donor_matches, blood_inventory, blood_banks, blood_requests, donor_profiles, users RESTART IDENTITY CASCADE;
 
 INSERT INTO users (user_id, name, email, phone, password_hash, role) VALUES
-('10000000-0000-0000-0000-000000000001', 'Ruby Admin', 'admin@ruby.demo', '+910000000001', '$2a$12$hFQ8IrdwbZH4Dbig36JUAuH9FkxPk.6YDdVGWJ7QO2dON2qhVT1S2', 'ADMIN'),
-('10000000-0000-0000-0000-000000000002', 'Asha Requester', 'asha@ruby.demo', '+910000000002', '$2a$12$hFQ8IrdwbZH4Dbig36JUAuH9FkxPk.6YDdVGWJ7QO2dON2qhVT1S2', 'USER'),
-('10000000-0000-0000-0000-000000000003', 'Dev Donor', 'dev@ruby.demo', '+910000000003', '$2a$12$hFQ8IrdwbZH4Dbig36JUAuH9FkxPk.6YDdVGWJ7QO2dON2qhVT1S2', 'USER'),
-('10000000-0000-0000-0000-000000000004', 'Mina Donor', 'mina@ruby.demo', '+910000000004', '$2a$12$hFQ8IrdwbZH4Dbig36JUAuH9FkxPk.6YDdVGWJ7QO2dON2qhVT1S2', 'USER'),
-('10000000-0000-0000-0000-000000000005', 'Kabir Donor', 'kabir@ruby.demo', '+910000000005', '$2a$12$hFQ8IrdwbZH4Dbig36JUAuH9FkxPk.6YDdVGWJ7QO2dON2qhVT1S2', 'USER'),
-('10000000-0000-0000-0000-000000000006', 'Sara Donor', 'sara@ruby.demo', '+910000000006', '$2a$12$hFQ8IrdwbZH4Dbig36JUAuH9FkxPk.6YDdVGWJ7QO2dON2qhVT1S2', 'USER'),
-('10000000-0000-0000-0000-000000000007', 'Omar Donor', 'omar@ruby.demo', '+910000000007', '$2a$12$hFQ8IrdwbZH4Dbig36JUAuH9FkxPk.6YDdVGWJ7QO2dON2qhVT1S2', 'USER');
+('10000000-0000-0000-0000-000000000001', 'Ruby Admin', 'admin@ruby.demo', '+910000000001', '$2a$12$iOHtN3x8KR7KWMGVA1sO.eCcoJNm26qm79tI3LUpQhkSZbsTxzqkC', 'ADMIN'),
+('10000000-0000-0000-0000-000000000002', 'Asha Requester', 'asha@ruby.demo', '+910000000002', '$2a$12$iOHtN3x8KR7KWMGVA1sO.eCcoJNm26qm79tI3LUpQhkSZbsTxzqkC', 'USER'),
+('10000000-0000-0000-0000-000000000003', 'Dev Donor', 'dev@ruby.demo', '+910000000003', '$2a$12$iOHtN3x8KR7KWMGVA1sO.eCcoJNm26qm79tI3LUpQhkSZbsTxzqkC', 'USER'),
+('10000000-0000-0000-0000-000000000004', 'Mina Donor', 'mina@ruby.demo', '+910000000004', '$2a$12$iOHtN3x8KR7KWMGVA1sO.eCcoJNm26qm79tI3LUpQhkSZbsTxzqkC', 'USER'),
+('10000000-0000-0000-0000-000000000005', 'Kabir Donor', 'kabir@ruby.demo', '+910000000005', '$2a$12$iOHtN3x8KR7KWMGVA1sO.eCcoJNm26qm79tI3LUpQhkSZbsTxzqkC', 'USER'),
+('10000000-0000-0000-0000-000000000006', 'Sara Donor', 'sara@ruby.demo', '+910000000006', '$2a$12$iOHtN3x8KR7KWMGVA1sO.eCcoJNm26qm79tI3LUpQhkSZbsTxzqkC', 'USER'),
+('10000000-0000-0000-0000-000000000007', 'Omar Donor', 'omar@ruby.demo', '+910000000007', '$2a$12$iOHtN3x8KR7KWMGVA1sO.eCcoJNm26qm79tI3LUpQhkSZbsTxzqkC', 'USER');
 
 INSERT INTO donor_profiles (donor_id, user_id, blood_group, latitude, longitude, location_label, last_donation_date, availability_status, response_count, accept_count, decline_count) VALUES
 ('20000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000003', 'B+', 17.444000, 78.377000, 'HITEC City demo area', now()::date - 140, 'AVAILABLE', 8, 6, 2),

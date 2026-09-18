@@ -15,8 +15,24 @@ const demoMode = String(process.env.DEMO_MODE ?? 'false').toLowerCase() === 'tru
 const nodeEnv = process.env.NODE_ENV ?? 'development';
 const jwtSecret = process.env.JWT_SECRET;
 const databaseUrl = process.env.DATABASE_URL;
+const knownInsecureJwtSecrets = new Set([
+  'development-only-change-me',
+  'local-demo-secret-change-me',
+  'replace-with-a-long-random-secret'
+]);
+const hasStrongJwtSecret = Boolean(
+  jwtSecret && jwtSecret.length >= 32 && !knownInsecureJwtSecrets.has(jwtSecret)
+);
 
-if (!demoMode && (!jwtSecret || jwtSecret.length < 32 || jwtSecret === 'development-only-change-me')) {
+if (nodeEnv === 'production' && demoMode) {
+  throw new Error('DEMO_MODE must be false when NODE_ENV is production.');
+}
+
+if (nodeEnv === 'production' && !hasStrongJwtSecret) {
+  throw new Error('Production requires an explicit JWT_SECRET of at least 32 characters that is not a documented default.');
+}
+
+if (!demoMode && !hasStrongJwtSecret) {
   throw new Error('JWT_SECRET must be set to a strong secret of at least 32 characters when DEMO_MODE is false.');
 }
 

@@ -128,6 +128,22 @@ const runDemoMatching = (request) => {
 
 runDemoMatching(db.requests[0]);
 
+const rematchActiveDemoRequests = () => {
+  const notificationsBefore = db.notifications.length;
+  let requestsRechecked = 0;
+  db.requests
+    .filter((request) => ['OPEN', 'MATCHING', 'PARTIALLY_MATCHED'].includes(request.status))
+    .filter((request) => new Date(request.required_before).getTime() > Date.now())
+    .forEach((request) => {
+      requestsRechecked += 1;
+      runDemoMatching(request);
+    });
+  return {
+    requests_rechecked: requestsRechecked,
+    notifications_sent: db.notifications.length - notificationsBefore
+  };
+};
+
 demoRoutes.post('/auth/register', async (req, res) => {
   const user = { user_id: id('user'), ...req.body, email: req.body.email.toLowerCase(), password_hash: await bcrypt.hash(req.body.password, 10), role: 'USER', account_status: 'ACTIVE' };
   db.users.push(user);
@@ -136,7 +152,10 @@ demoRoutes.post('/auth/register', async (req, res) => {
 
 demoRoutes.post('/auth/login', async (req, res, next) => {
   const user = db.users.find((item) => item.email === String(req.body.email).toLowerCase());
-  if (!user || !(await bcrypt.compare(req.body.password, user.password_hash))) return next(new AppError('Invalid email or password.', 401));
+  if (!user) return next(new AppError('Account not found.', 404));
+  if (!(await bcrypt.compare(req.body.password, user.password_hash))) {
+    return next(new AppError('Incorrect email or password.', 401));
+  }
   res.json({ user: safeUser(user), token: signToken(user) });
 });
 
@@ -151,7 +170,7 @@ demoRoutes.post('/donors/profile', requireDemoAuth, requireDemoNonAdmin, (req, r
     profile = { donor_id: id('donor'), user_id: req.user.user_id, response_count: 0, accept_count: 0, decline_count: 0, ...req.body };
     db.donors.push(profile);
   }
-  res.json({ profile });
+  res.json({ profile, matching: rematchActiveDemoRequests() });
 });
 demoRoutes.put('/donors/profile', requireDemoAuth, requireDemoNonAdmin, (req, res) => {
   let profile = db.donors.find((donor) => donor.user_id === req.user.user_id);
@@ -160,7 +179,7 @@ demoRoutes.put('/donors/profile', requireDemoAuth, requireDemoNonAdmin, (req, re
     profile = { donor_id: id('donor'), user_id: req.user.user_id, response_count: 0, accept_count: 0, decline_count: 0, ...req.body };
     db.donors.push(profile);
   }
-  res.json({ profile });
+  res.json({ profile, matching: rematchActiveDemoRequests() });
 });
 demoRoutes.patch('/donors/availability', requireDemoAuth, requireDemoNonAdmin, (req, res, next) => {
   const profile = db.donors.find((donor) => donor.user_id === req.user.user_id);

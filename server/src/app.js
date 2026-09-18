@@ -79,6 +79,10 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
+app.get('/api/public-config', (req, res) => {
+  res.json({ showDemoCredentials: env.nodeEnv !== 'production' });
+});
+
 if (env.demoMode) {
   app.use('/api', demoRoutes);
 } else {

@@ -420,6 +420,36 @@ textarea {
   resize: vertical;
 }
 
+.password-input {
+  position: relative;
+  display: block;
+}
+
+.password-input input {
+  padding-right: 46px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #667085;
+  display: grid;
+  place-items: center;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.password-toggle:hover,
+.password-toggle:focus-visible {
+  color: var(--ruby);
+}
+
 .form-error,
 .form-success {
   border-radius: 8px;

@@ -5,7 +5,7 @@ import { calculateDistanceKm } from './distanceService.js';
 import { isPreliminarilyEligible } from './eligibilityService.js';
 import { calculatePriorityScore } from './rankingService.js';
 import { listCandidateDonors } from '../repositories/donorRepository.js';
-import { findRequestById, getRequestProgress, updateRequestStatus } from '../repositories/requestRepository.js';
+import { findRequestById, getRequestProgress, listAllRequests, updateRequestStatus } from '../repositories/requestRepository.js';
 import {
   findExistingMatch,
   listPendingMatchesForBatch,
@@ -127,3 +127,34 @@ export const notifyNextBatch = async (requestId, enforceRequestState = true) => 
   return { notified_count: pending.length, batch_number: batchNumber };
 };
 
+export const rematchActiveRequestsForDonor = async (profile) => {
+  const eligibleProfile = { ...profile, account_status: 'ACTIVE' };
+  if (!isPreliminarilyEligible(eligibleProfile)) {
+    return { requests_rechecked: 0, notifications_sent: 0 };
+  }
+
+  const maximumRadiusKm = matchingConfig.radiusStepsKm.at(-1);
+  const requests = await listAllRequests();
+  const relevantRequests = requests.filter((request) => {
+    if (!['OPEN', 'MATCHING', 'PARTIALLY_MATCHED'].includes(request.status)) return false;
+    if (new Date(request.required_before).getTime() <= Date.now()) return false;
+    if (!compatibleDonorGroupsForRecipient(request.required_blood_group).includes(profile.blood_group)) return false;
+
+    const distanceKm = calculateDistanceKm(
+      { latitude: request.latitude, longitude: request.longitude },
+      { latitude: profile.latitude, longitude: profile.longitude }
+    );
+    return distanceKm <= maximumRadiusKm;
+  });
+
+  let notificationsSent = 0;
+  for (const request of relevantRequests) {
+    const result = await runMatchingForRequest(request.request_id);
+    notificationsSent += result.notified_count;
+  }
+
+  return {
+    requests_rechecked: relevantRequests.length,
+    notifications_sent: notificationsSent
+  };
+};

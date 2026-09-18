@@ -9,6 +9,7 @@ import { listHistoryForDonorUser } from '../repositories/matchRepository.js';
 import { listAllRequests } from '../repositories/requestRepository.js';
 import { calculateDistanceKm } from '../services/distanceService.js';
 import { isCompatibleForRbcDonation } from '../services/compatibilityService.js';
+import { rematchActiveRequestsForDonor } from '../services/matchingService.js';
 
 export const getProfile = async (req, res) => {
   const profile = await findProfileByUserId(req.user.user_id);
@@ -18,7 +19,8 @@ export const getProfile = async (req, res) => {
 export const saveProfile = async (req, res) => {
   const payload = donorProfileSchema.parse(req.body);
   const profile = await upsertDonorProfile(req.user.user_id, payload);
-  res.status(200).json({ profile });
+  const matching = await rematchActiveRequestsForDonor(profile);
+  res.status(200).json({ profile, matching });
 };
 
 export const patchAvailability = async (req, res) => {
@@ -51,4 +53,3 @@ export const nearbyRequests = async (req, res) => {
     .sort((a, b) => a.distance_km - b.distance_km);
   res.json({ requests: nearby });
 };
-
