@@ -1,11 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../services/apiClient.js';
 import { StatusBadge } from '../components/ui/StatusBadge.jsx';
 
 export const MyRequestsPage = () => {
   const [requests, setRequests] = useState(null);
-  useEffect(() => { api.get('/requests').then((res) => setRequests(res.data.requests)); }, []);
+  const load = useCallback(() => api.get('/requests').then((res) => setRequests(res.data.requests)), []);
+  useEffect(() => {
+    load();
+    const refreshTimer = window.setInterval(load, 30000);
+    return () => window.clearInterval(refreshTimer);
+  }, [load]);
   if (!requests) return <div className="panel">Loading requests...</div>;
   return (
     <section className="panel">

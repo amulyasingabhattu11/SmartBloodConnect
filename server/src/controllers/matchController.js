@@ -1,6 +1,6 @@
 import { AppError } from '../utils/AppError.js';
-import { findMatchById, findMatchContactForRequester, updateDonorResponse } from '../repositories/matchRepository.js';
-import { incrementDonorResponse } from '../repositories/donorRepository.js';
+import { findMatchById, findMatchContactForRequester, markDonationCompleted, updateDonorResponse } from '../repositories/matchRepository.js';
+import { incrementDonorResponse, updateLastDonationDate } from '../repositories/donorRepository.js';
 import { findRequestById, getRequestProgress, updateRequestStatus } from '../repositories/requestRepository.js';
 import { notifyRequesterAccepted, setNotificationStatus } from '../services/notificationService.js';
 
@@ -40,6 +40,30 @@ const respondToMatch = async (req, res, response) => {
 
 export const acceptMatch = (req, res) => respondToMatch(req, res, 'ACCEPTED');
 export const declineMatch = (req, res) => respondToMatch(req, res, 'DECLINED');
+
+export const completeDonation = async (req, res) => {
+  const match = await findMatchById(req.params.id);
+  if (!match) throw new AppError('Match was not found.', 404);
+  if (match.requester_id !== req.user.user_id && req.user.role !== 'ADMIN') {
+    throw new AppError('Only the requester or an administrator can confirm a completed donation.', 403);
+  }
+  if (match.donor_response !== 'ACCEPTED') {
+    throw new AppError('A donation can be completed only after the donor accepts the request.', 409);
+  }
+  if (!['OPEN', 'MATCHING', 'PARTIALLY_MATCHED', 'FULFILLED'].includes(match.request_status)) {
+    throw new AppError('A donation cannot be completed for this request status.', 409);
+  }
+  if (match.donation_completed_at) {
+    throw new AppError('This donation has already been marked completed.', 409);
+  }
+
+  const completedAt = new Date();
+  await updateLastDonationDate(match.donor_id, completedAt.toISOString().slice(0, 10));
+  const updated = await markDonationCompleted(match.match_id, completedAt.toISOString());
+  if (!updated) throw new AppError('This donation has already been marked completed.', 409);
+
+  res.json({ match: updated });
+};
 
 export const contactDonor = async (req, res) => {
   const contact = await findMatchContactForRequester(req.params.id, req.user.user_id, req.user.role);

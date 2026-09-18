@@ -62,6 +62,17 @@ export const updateAvailability = async (userId, availabilityStatus) => {
   return result.rows[0] || null;
 };
 
+export const updateLastDonationDate = async (donorId, lastDonationDate) => {
+  const result = await query(
+    `UPDATE donor_profiles
+     SET last_donation_date = $2, updated_at = now()
+     WHERE donor_id = $1
+     RETURNING *`,
+    [donorId, lastDonationDate]
+  );
+  return result.rows[0] || null;
+};
+
 export const listCandidateDonors = async () => {
   const result = await query(
     `SELECT dp.*, u.name, u.account_status

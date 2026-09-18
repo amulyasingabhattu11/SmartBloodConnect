@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api, apiErrorMessage } from '../services/apiClient.js';
 import { MedicalDisclaimer } from '../components/ui/MedicalDisclaimer.jsx';
@@ -10,8 +10,12 @@ export const RequestDetailsPage = () => {
   const [error, setError] = useState('');
   const [contact, setContact] = useState(null);
 
-  const load = () => api.get(`/requests/${id}`).then((res) => setData(res.data));
-  useEffect(() => { load(); }, [id]);
+  const load = useCallback(() => api.get(`/requests/${id}`).then((res) => setData(res.data)), [id]);
+  useEffect(() => {
+    load();
+    const refreshTimer = window.setInterval(load, 30000);
+    return () => window.clearInterval(refreshTimer);
+  }, [load]);
 
   const notifyNext = async () => {
     try {
@@ -32,6 +36,17 @@ export const RequestDetailsPage = () => {
     try {
       const res = await api.get(`/matches/${matchId}/contact`);
       setContact(res.data.contact);
+    } catch (err) {
+      setError(apiErrorMessage(err));
+    }
+  };
+
+  const completeDonation = async (matchId) => {
+    if (!window.confirm('Confirm that this donor completed the blood donation?')) return;
+    setError('');
+    try {
+      await api.post(`/matches/${matchId}/complete-donation`);
+      await load();
     } catch (err) {
       setError(apiErrorMessage(err));
     }
@@ -79,6 +94,9 @@ export const RequestDetailsPage = () => {
               <strong>{match.donor_label} - {match.blood_group}</strong>
               <span>{Number(match.distance_km).toFixed(1)} km approx. Candidate Priority Score: {match.priority_score}</span>
               <StatusBadge>{match.donor_response}</StatusBadge>
+              {match.donation_completed_at && (
+                <span>Donation completed {new Date(match.donation_completed_at).toLocaleString()}</span>
+              )}
               <button
                 className="secondary-button"
                 onClick={() => contactDonor(match.match_id)}
@@ -87,6 +105,12 @@ export const RequestDetailsPage = () => {
               >
                 Contact donor
               </button>
+              {match.donor_response === 'ACCEPTED' && !match.donation_completed_at &&
+                ['OPEN', 'MATCHING', 'PARTIALLY_MATCHED', 'FULFILLED'].includes(request.status) && (
+                  <button className="primary-button" onClick={() => completeDonation(match.match_id)}>
+                    Mark Donation Completed
+                  </button>
+                )}
             </div>
           ))}
         </div>

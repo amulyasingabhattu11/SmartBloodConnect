@@ -112,6 +112,17 @@ export const updateDonorResponse = async (matchId, response) => {
   return result.rows[0];
 };
 
+export const markDonationCompleted = async (matchId, completedAt) => {
+  const result = await query(
+    `UPDATE donor_matches
+     SET donation_completed_at = $2, updated_at = now()
+     WHERE match_id = $1 AND donation_completed_at IS NULL
+     RETURNING *`,
+    [matchId, completedAt]
+  );
+  return result.rows[0] || null;
+};
+
 export const listHistoryForDonorUser = async (userId) => {
   const result = await query(
     `SELECT dm.*, br.required_blood_group, br.hospital_name, br.urgency, br.required_before

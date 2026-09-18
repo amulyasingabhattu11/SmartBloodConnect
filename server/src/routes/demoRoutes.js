@@ -267,6 +267,28 @@ const respond = (req, res, next, response) => {
 
 demoRoutes.post('/matches/:id/accept', requireDemoAuth, (req, res, next) => respond(req, res, next, 'ACCEPTED'));
 demoRoutes.post('/matches/:id/decline', requireDemoAuth, (req, res, next) => respond(req, res, next, 'DECLINED'));
+demoRoutes.post('/matches/:id/complete-donation', requireDemoAuth, (req, res, next) => {
+  const match = db.matches.find((item) => item.match_id === req.params.id);
+  if (!match) return next(new AppError('Match was not found.', 404));
+  const request = db.requests.find((item) => item.request_id === match.request_id);
+  if (request.requester_id !== req.user.user_id && req.user.role !== 'ADMIN') {
+    return next(new AppError('Only the requester or an administrator can confirm a completed donation.', 403));
+  }
+  if (match.donor_response !== 'ACCEPTED') {
+    return next(new AppError('A donation can be completed only after the donor accepts the request.', 409));
+  }
+  if (!['OPEN', 'MATCHING', 'PARTIALLY_MATCHED', 'FULFILLED'].includes(request.status)) {
+    return next(new AppError('A donation cannot be completed for this request status.', 409));
+  }
+  if (match.donation_completed_at) {
+    return next(new AppError('This donation has already been marked completed.', 409));
+  }
+
+  match.donation_completed_at = new Date().toISOString();
+  const donor = db.donors.find((item) => item.donor_id === match.donor_id);
+  donor.last_donation_date = match.donation_completed_at.slice(0, 10);
+  res.json({ match });
+});
 demoRoutes.get('/matches/:id/contact', requireDemoAuth, (req, res, next) => {
   const match = db.matches.find((item) => item.match_id === req.params.id);
   if (!match) return next(new AppError('Match was not found.', 404));

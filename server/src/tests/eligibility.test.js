@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { isPreliminarilyEligible } from '../services/eligibilityService.js';
+import { donationRecencyScore, isPreliminarilyEligible } from '../services/eligibilityService.js';
+import { matchingConfig } from '../config/matchingConfig.js';
 
 const donor = (overrides = {}) => ({
   account_status: 'ACTIVE',
@@ -22,5 +23,22 @@ describe('preliminary donor eligibility', () => {
 
   it('rejects donors without an explicit location capture', () => {
     expect(isPreliminarilyEligible(donor({ location_captured_at: null }))).toBe(false);
+  });
+
+  it('rejects a donor immediately after a completed donation', () => {
+    expect(isPreliminarilyEligible(donor({
+      last_donation_date: new Date().toISOString().slice(0, 10)
+    }))).toBe(false);
+  });
+
+  it('rejects a donor before the eight-week interval is complete', () => {
+    const date = new Date(Date.now() - 55 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    expect(donationRecencyScore(date)).toBe(0);
+  });
+
+  it('accepts a donor after the eight-week interval is complete', () => {
+    const date = new Date(Date.now() - 57 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    expect(matchingConfig.minDonationIntervalDays).toBe(56);
+    expect(donationRecencyScore(date)).toBe(100);
   });
 });
