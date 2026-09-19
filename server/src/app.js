@@ -55,6 +55,10 @@ app.use(
     credentials: true
   })
 );
+// Trust the two proxy hops in front of the app: CloudFront → nginx → Express.
+// Without this, express-rate-limit sees the nginx IP instead of the real client IP.
+app.set('trust proxy', 2);
+
 app.use(
   '/api',
   rateLimit({

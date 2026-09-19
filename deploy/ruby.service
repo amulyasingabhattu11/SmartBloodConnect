@@ -1,0 +1,25 @@
+[Unit]
+Description=Ruby API (SmartBloodConnect Node/Express server)
+Documentation=https://github.com/your-org/SmartBloodConnect
+After=network.target docker.service
+Wants=docker.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/opt/ruby/app/server
+# Secrets and runtime config are written to this file by render-env.sh (chmod 600).
+EnvironmentFile=/opt/ruby/.env
+ExecStart=/usr/bin/node src/server.js
+# Restart automatically on crash; wait 3 s between attempts.
+Restart=always
+RestartSec=3
+# Give Node 30 s to finish in-flight requests on stop/restart.
+TimeoutStopSec=30
+# Journal logging (readable with: journalctl -u ruby -f)
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ruby
+
+[Install]
+WantedBy=multi-user.target
