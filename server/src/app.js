@@ -40,7 +40,7 @@ app.use(
         objectSrc: ["'none'"],
         baseUri: ["'self'"],
         frameAncestors: ["'none'"],
-        upgradeInsecureRequests: env.nodeEnv === 'production' ? [] : null
+        upgradeInsecureRequests: env.nodeEnv === 'production' && env.clientOrigin.startsWith('https://') ? [] : null
       }
     },
     crossOriginEmbedderPolicy: false
